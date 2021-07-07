@@ -3,7 +3,7 @@
 -- Copyright (C) OpenWAF
 
 local _M = {
-    _VERSION = "0.0.2"
+    _VERSION = "1.0.1"
 }
 
 _M.api = {}
@@ -15,6 +15,13 @@ _M.api.shm = {}
 _M.api.ctx = {}
 _M.api._G = {}
 _M.api.version = {}
+_M.api.luajit = {}
+_M.api.errlog = {}
+
+local  errlog   = require "ngx.errlog"
+local  new_tab  = require "table.new"
+
+local _tonumber = tonumber
 
 -- get engine info, e.g: GET /api/collectgarbage
 _M.api.collectgarbage.get = function(_twaf, log, u)
@@ -57,7 +64,7 @@ _M.api.timer_count.get = function(_twaf, log, u)
     return
 end
 
--- get shm, e.g: GET /api/shm/{shared_dict_name}
+-- get shm, e.g: GET /api/shm/{shared_dict_name}/{key}
 _M.api.shm.get  = function(_twaf, log, u)
     
     if not u[2] then
@@ -71,6 +78,11 @@ _M.api.shm.get  = function(_twaf, log, u)
     if not dict then
         log.success = 0
         log.reason = "invalid shared dict '"..u[2].."'"
+        return
+    end
+    
+    if u[3] then
+        log.result = dict:get(u[3]) or "nil"
         return
     end
     
@@ -158,6 +170,52 @@ _M.api.version.get  = function(_twaf, log, u)
     log.result = mod._VERSION
 end
 
+-- get version, e.g: GET /api/luajit
+_M.api.luajit.get = function(_twaf, _log, u)
+
+    local jitv
+    
+    if jit then jitv = jit.version end
+    
+    _log.result = {
+        lua = _VERSION,
+        luajit = jitv
+    }
+    
+    return
+end
+
+--get errlog, e.g: GET /api/errlog
+--TODO: choose: time, level, count
+--NOW: last 100 error logs which level > WARN
+_M.api.errlog.get = function(_twaf, _log, u)
+
+    local _max = 100
+    
+    if u[2] then
+        _max = _tonumber(u[2])
+    end
+    
+    local buffer   = new_tab(_max * 3, 0)
+    local res, err = errlog.get_logs(_max, buffer)
+    _log.result = res
+    
+    --[[
+    if res then
+        for i = 1, #res, 3 do
+            local _level = res[i]
+            if not _level then
+                break
+            end
+            local _time = res[i + 1]
+            local _msg  = res[i + 2]
+            
+            _log.result[num] = 
+        end
+    end
+    ]]
+end
+
 _M.help.collectgarbage = {
     "GET /api/collectgarbage"
 }
@@ -188,12 +246,20 @@ _M.help.ctx = {
 }
 
 _M.help.shm = {
-    "GET /api/shm/{shared_dict_name}"
+    "GET /api/shm/{shared_dict_name}/{key}"
 }
 
 _M.help.version = {
     "GET /api/version",
     "GET /api/version/{module_name}"
 }
-    
+
+_M.help.luajit = {
+    "GET /api/luajit"
+}
+
+_M.help.errlog = {
+    "GET /api/errlog"
+}
+
 return _M

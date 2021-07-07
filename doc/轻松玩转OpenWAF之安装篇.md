@@ -25,16 +25,20 @@ Table of Contents
 
 ```txt
     cd /opt
-    apt-get install wget git swig make perl build-essential zlib1g-dev libgeoip-dev libncurses5-dev libreadline-dev -y
-    wget https://ftp.pcre.org/pub/pcre/pcre-8.40.tar.gz
-    wget https://www.openssl.org/source/openssl-1.0.2k.tar.gz
-    wget https://openresty.org/download/openresty-1.11.2.2.tar.gz
-    tar -zxvf pcre-8.40.tar.gz
-    tar -zxvf openssl-1.0.2k.tar.gz
-    tar -zxvf openresty-1.11.2.2.tar.gz
-    rm -rf pcre-8.40.tar.gz \
-           openssl-1.0.2k.tar.gz \
-           openresty-1.11.2.2.tar.gz
+    apt-get install gcc wget git swig make perl build-essential zlib1g-dev libgeoip-dev libncurses5-dev libreadline-dev -y
+    wget http://www.over-yonder.net/~fullermd/projects/libcidr/libcidr-1.2.3.tar.xz
+    wget https://ftp.pcre.org/pub/pcre/pcre-8.44.tar.gz
+    wget https://www.openssl.org/source/openssl-1.1.1d.tar.gz
+    wget https://openresty.org/download/openresty-1.19.3.1.tar.gz
+    tar -xvf libcidr-1.2.3.tar.xz
+    tar -zxvf pcre-8.44.tar.gz
+    tar -zxvf openssl-1.1.1d.tar.gz
+    tar -zxvf openresty-1.19.3.1.tar.gz
+    rm -rf pcre-8.44.tar.gz \
+           openssl-1.1.1d.tar.gz \
+           openresty-1.19.3.1.tar.gz
+    cd /opt/libcidr-1.2.3
+    make && make install
 ```
 
 ```txt
@@ -48,17 +52,17 @@ PS:
             apt-get update  
             apt-get install -t jessie-backports openssl  
             
-        方法 2. 下载 openssl 源代码，如 1.0.2k 版本  
-            wget -c http://www.openssl.org/source/openssl-1.0.2k.tar.gz  
-            tar -zxvf openssl-1.0.2k.tar.gz
+        方法 2. 下载 openssl 源代码，如 1.1.1d 版本  
+            wget -c http://www.openssl.org/source/openssl-1.1.1d.tar.gz  
+            tar -zxvf openssl-1.1.1d.tar.gz
             ./config  
             make && make install  
             
         若用方法 1 和 方法 2 后， openssl version 命令显示的版本依旧低于 1.0.2e 版本，请求方法 3
         
         方法 3. 编译 openresty 时指定 openssl 安装目录
-            wget -c http://www.openssl.org/source/openssl-1.0.2k.tar.gz
-            tar -zxvf openssl-1.0.2k.tar.gz
+            wget -c http://www.openssl.org/source/openssl-1.1.1d.tar.gz
+            tar -zxvf openssl-1.1.1d.tar.gz
             编译 openresty 时通过 --with-openssl=/path/to/openssl-xxx/ 指定 openssl 安装路径  
  
         本示例使用方法 3
@@ -68,15 +72,15 @@ PS:
         OpenResty 依赖 PCRE ，但通过 apt-get 安装无法开启 pcre-jit，解决方法：  
         
         方法 1. 源码编译
-            wget https://ftp.pcre.org/pub/pcre/pcre-8.40.tar.gz  
-            tar -zxvf pcre-8.40.tar.gz  
-            cd pcre-8.40  
+            wget https://ftp.pcre.org/pub/pcre/pcre-8.44.tar.gz  
+            tar -zxvf pcre-8.44.tar.gz  
+            cd pcre-8.44  
             ./configure --enable-jit  
             make && make install  
             
-        方法 2. 编译 openresty 时指定 openssl 安装目录
-            wget https://ftp.pcre.org/pub/pcre/pcre-8.40.tar.gz  
-            tar -zxvf pcre-8.40.tar.gz  
+        方法 2. 编译 openresty 时指定 pcre 安装目录
+            wget https://ftp.pcre.org/pub/pcre/pcre-8.44.tar.gz  
+            tar -zxvf pcre-8.44.tar.gz  
             编译 openresty 时通过 --with-pcre=/path/to/pcre-xxx/ 指定 pcre 安装路径 
         
         本示例使用方法 2
@@ -88,10 +92,12 @@ PS:
     cd /opt  
     git clone https://github.com/titansec/OpenWAF.git
     mv /opt/OpenWAF/lib/openresty/ngx_openwaf.conf /etc
-    mv /opt/OpenWAF/lib/openresty/configure /opt/openresty-1.11.2.2
-    cp -RP /opt/OpenWAF/lib/openresty/* /opt/openresty-1.11.2.2/bundle/
+    mv /opt/OpenWAF/lib/openresty/configure /opt/openresty-1.19.3.1
+    cp -RP /opt/OpenWAF/lib/openresty/* /opt/openresty-1.19.3.1/bundle/
     cd /opt/OpenWAF
+    make clean
     make install
+    ln -s /usr/local/lib/libcidr.so /opt/OpenWAF/lib/resty/libcidr.so
 ```
 
 ```txt
@@ -107,15 +113,15 @@ PS:
 3. 编译 openresty  
 
 ```txt
-    cd /opt/openresty-1.11.2.2/  
+    cd /opt/openresty-1.19.3.1/  
     ./configure --with-pcre-jit --with-ipv6 \  
                 --with-http_stub_status_module \  
                 --with-http_ssl_module \  
                 --with-http_realip_module \  
                 --with-http_sub_module  \  
                 --with-http_geoip_module \  
-                --with-openssl=/opt/openssl-1.0.2k \ 
-                --with-pcre=/opt/pcre-8.40
+                --with-openssl=/opt/openssl-1.1.1d \ 
+                --with-pcre=/opt/pcre-8.44
     make && make install 
 ```
 
@@ -159,7 +165,9 @@ PS:
         docker pull titansec/openwaf:x.x.x-jessie 获取 jessie 的 OpenWAF x.x.x 版
         docker pull titansec/openwaf:x.x.x-centos 获取 centos 的 OpenWAF x.x.x 版
         
-        历史版本列表：https://hub.docker.com/r/titansec/openwaf/tags/
+        历史版本列表：
+            国外镜像源：https://hub.docker.com/r/titansec/openwaf/tags/  
+            国内镜像源：https://cr.console.aliyun.com/images/cn-hangzhou/titansec/openwaf/detail
         
     2. 挂载配置文件和日志
         将配置文件保留在宿主机中，更新 OpenWAF 只需更新 Docker 镜像即可
